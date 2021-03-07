@@ -35,7 +35,8 @@ function init() {
     // Scene
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0xdbfffe);
-    scene.fog = new THREE.FogExp2(0xc1c1c1, 0.005);
+    if(isWalking === true && isFlying === false)
+        scene.fog = new THREE.FogExp2(0xc1c1c1, 0.005);
 
     // Camera
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);

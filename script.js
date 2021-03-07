@@ -13,10 +13,13 @@ let moveRight = false;
 let canJump = false;
 let isSprinting = false;
 
+let isWalking = true;
+let isFlying = false;
+
 // World
 let mesh, texture, container;
-const worldWidth = 150; 
-const worldDepth = 150;
+let worldWidth = 150; 
+let worldDepth = 150;
 const clock = new THREE.Clock();
 
 let prevTime = performance.now();
@@ -39,18 +42,11 @@ function init() {
     camera.position.y = 1200;
     camera.rotation.y = 98.96;
 
+    // Controls
     controls = new THREE.PointerLockControls(camera, document.body);
 
     window.addEventListener("click", function() {
         controls.lock();
-    });
-
-    controls.addEventListener("lock", function() {
-
-    });
-
-    controls.addEventListener("unlock", function () {
-
     });
 
     scene.add(controls.getObject());
@@ -83,7 +79,9 @@ function init() {
                 break;
 
             case "Space":
-                if (canJump === true) velocity.y += 220;
+                if(canJump === true && isFlying === false) 
+                    velocity.y += 220;
+
                 canJump = false;
                 break;
         }
@@ -118,11 +116,11 @@ function init() {
         }
     };
 
-    stats = new Stats();
-    document.body.appendChild(stats.dom);
-
     document.addEventListener("keydown", onKeyDown);
     document.addEventListener("keyup", onKeyUp);
+
+    stats = new Stats();
+    document.body.appendChild(stats.dom);
 
     raycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, - 1, 0 ), 0, 10);
 
@@ -250,45 +248,47 @@ function animate() {
     const time = performance.now();
 
     // Collisions
-    if (controls.isLocked === true) {
-        raycaster.ray.origin.copy(controls.getObject().position);
-        raycaster.ray.origin.y -= 10;
-        const intersections = raycaster.intersectObjects(objects);
-        const onObject = intersections.length > 0;
-        const delta = (time - prevTime) / 1000;
-        velocity.x -= velocity.x * 10.0 * delta;
-        velocity.z -= velocity.z * 10.0 * delta;
-        velocity.y -= 9.8 * 50.0 * delta; // 100.0 = mass
-        direction.z = Number(moveForward) - Number(moveBackward);
-        direction.x = Number(moveRight) - Number(moveLeft);
-        direction.normalize(); 
+    raycaster.ray.origin.copy(controls.getObject().position);
+    raycaster.ray.origin.y -= 10;
+    const intersections = raycaster.intersectObjects(objects);
+    const onObject = intersections.length > 0;
+    const delta = (time - prevTime) / 1000;
+    velocity.x -= velocity.x * 10.0 * delta;
+    velocity.z -= velocity.z * 10.0 * delta;
+    velocity.y -= 9.8 * 50.0 * delta; // 100.0 = mass
+    direction.z = Number(moveForward) - Number(moveBackward);
+    direction.x = Number(moveRight) - Number(moveLeft);
+    direction.normalize(); 
 
-        // Player Movement
-        if (moveForward || moveBackward ) 
-            velocity.z -= direction.z * 500.0 * delta;
-        if (moveLeft || moveRight) 
-            velocity.x -= direction.x * 500.0 * delta;
-        if (moveForward && isSprinting) 
-            velocity.z -= direction.z * 600.0 * delta;
+    // Player Movement
+    if (moveForward || moveBackward ) 
+        velocity.z -= direction.z * 500.0 * delta;
+    if (moveLeft || moveRight) 
+        velocity.x -= direction.x * 500.0 * delta;
+    if (moveForward && isSprinting) 
+        velocity.z -= direction.z * 600.0 * delta;
 
-        // If On Object That Is Collidable Then CanJump = True
-        if (onObject === true) {
-            velocity.y = Math.max(0, velocity.y);
-            canJump = true;
-        }
-
-        controls.moveRight(- velocity.x * delta);
-        controls.moveForward(- velocity.z * delta);
-
-        controls.getObject().position.y += (velocity.y * delta);
-
-        if (controls.getObject().position.y < 10) {
-            velocity.y = 0;
-            controls.getObject().position.y = 10;
-            canJump = true;
-        }
+    // If On Object That Is Collidable Then CanJump = True
+    if (onObject === true && isFlying === false) {
+        velocity.y = Math.max(0, velocity.y);
+        canJump = true;
     }
 
+    controls.moveRight(- velocity.x * delta);
+    controls.moveForward(- velocity.z * delta);
+
+    controls.getObject().position.y += (velocity.y * delta);
+    if(controls.getObject().position.y < 10) {
+        velocity.y = 0;
+        controls.getObject().position.y = 10;
+        canJump = true;
+    }
+
+    if(isFlying === true) {
+        velocity.y = Math.max(0, velocity.y);
+        canJump = true;
+    }
+    
     prevTime = time;
     renderer.render(scene, camera);
     stats.update();
@@ -297,4 +297,23 @@ function animate() {
     if(camera.position.y <= 10) {
         camera.position.y += 1100
     } 
+
+    if(isFlying === true && isWalking === false) {
+        camera.position.y = 1100;
+        scene.fog = new THREE.FogExp2(0xc1c1c1, 0.002);
+    }
+
+    // Fly and Walk Buttons
+    const flyBtn = document.getElementById("flyBtn");
+    const walkBtn = document.getElementById("walkBtn");
+
+    flyBtn.addEventListener("click", function() {
+        isFlying = true;
+        isWalking = false;
+    });
+
+    walkBtn.addEventListener("click", function() {
+        isFlying = false;
+        isWalking = true;
+    });
 }

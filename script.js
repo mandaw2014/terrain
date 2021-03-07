@@ -1,4 +1,4 @@
-let camera, scene, renderer, controls;
+let camera, scene, renderer, controls, stats;
 
 // Collidable Objects Array
 const objects = [];
@@ -117,6 +117,9 @@ function init() {
                 break;
         }
     };
+
+    stats = new Stats();
+    document.body.appendChild(stats.dom);
 
     document.addEventListener("keydown", onKeyDown);
     document.addEventListener("keyup", onKeyUp);
@@ -288,6 +291,7 @@ function animate() {
 
     prevTime = time;
     renderer.render(scene, camera);
+    stats.update();
 
     // Stopping The Player From Falling Forever
     if(camera.position.y <= 10) {
